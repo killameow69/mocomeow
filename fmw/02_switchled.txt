@@ -1,0 +1,59 @@
+ALGORITHM:
+STEP 1: Initialize the GPIO peripherals: Enable clock for GPIOA and GPIOC.
+STEP 2: Configure pin PA5 (connected to the LED) as an output pin.
+STEP 3: Configure pin PC13 (connected to the push button) as an input pin.
+STEP 4: Continuously monitor the state of PC13 using a while loop.
+STEP 5: If PC13 is high (push button is pressed), turn off the LED by clearing bit 5 of         
+               GPIOA using BSRR register.
+STEP 6: If PC13 is low (push button is not pressed), turn on the LED by setting bit 5
+               of  GPIOA using BSRR register.
+STEP 7: Repeat the process indefinitely in the main loop.
+
+PROGRAM:
+ gpio.h
+
+#ifndef GPIO_H
+#define GPIO_H
+#include "stm32f4xx.h"
+void GPIO_Init(void);
+#endif /* GPIO_H */
+
+gpio.c
+
+#include "gpio.h"
+void GPIO_Init(void) {
+    RCC->AHB1ENR |= RCC_AHB1ENR_GPIOCEN; /* enable GPIOC clock */
+    RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN; /* enable GPIOA clock */
+
+    GPIOA->MODER &= ~GPIO_MODER_MODER5_Msk; /* clear pin mode */
+    GPIOA->MODER |= GPIO_MODER_MODER5_0; /* set pin to output mode */
+
+    GPIOC->MODER &= ~GPIO_MODER_MODER13_Msk; /* clear pin mode to input mode */
+}
+
+main.c
+
+#include "stm32f4xx.h"
+#include "gpio.h"
+
+int main(void) {
+    GPIO_Init();
+    while(1) {
+        if (GPIOC->IDR & GPIO_IDR_IDR_13) /* if PC13 is high */
+            GPIOA->BSRR = GPIO_BSRR_BR_5; /* turn off green LED */
+        else
+            GPIOA->BSRR = GPIO_BSRR_BS_5; /* turn on green LED */
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+

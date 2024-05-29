@@ -1,0 +1,65 @@
+
+ALGORITHM:
+STEP 1: Start the program.
+STEP 2: Enable the SysTick timer and configure it to generate interrupts at regular   
+               Intervals. 
+STEP 3: Determine the appropriate reload value for the SysTick timer based on your   
+               desired delay and system clock frequency. Load this value into the SysTick 
+               LOAD register. 
+STEP 4: Implement a delay function that takes the desired delay in milliseconds as an 
+               argument. Inside the function, wait until the SysTick timer's count flag 
+               (COUNTFLAG) is set, indicating that the desired delay has elapsed.
+STEP 5: Enable the clock for the GPIO port to which your LED or output device is 
+               connected. Configure the GPIO pin connected to the LED as an output pin.
+STEP 6: In your main program loop, toggle the state of the GPIO pin connected to the 
+               LED. Use the delay function to introduce a delay between toggling the LED 
+               on and off.
+STEP 7: Compile your code and flash it onto your STM32F4 microcontroller board.
+STEP 8: Stop the program.
+
+
+
+
+
+PROGRAM:
+Main.c
+
+#include "stm32f4xx.h"
+#include "systick.h"
+
+int main(void) {
+	   systick();
+}
+
+Systick.c
+#include"stm32f4xx.h"
+#define SYSTICK_LOAD_VAL			16000
+#define	CTRL_ENABLE					(1U<<0)
+#define CTRL_CLKSRC					(1U<<2)
+#define CTRL_COUNTFLAG				(1U<<16)
+void systickDelayMs(int delay);
+void systick(void){
+	RCC->AHB1ENR |= 1; /* enable GPIOA clock */
+	GPIOA->MODER &= ~0x00000C00; /* clear pin mode */
+	GPIOA->MODER |= 0x00000400; /* set pin to output mode */
+	while(1)
+	{
+	GPIOA->ODR |= 0x00000020; /* turn on LED */
+	systickDelayMs(500);
+	GPIOA->ODR &= ~0x00000020; /* turn off LED */
+	systickDelayMs(500);
+	}
+	}
+	/* 16 MHz SYSCLK */
+	void systickDelayMs(int delay)
+	{
+                 	SysTick->LOAD	= SYSTICK_LOAD_VAL;
+		SysTick->VAL = 0;
+		SysTick->CTRL = CTRL_ENABLE | CTRL_CLKSRC;
+		for(int i=0; i<delay ; i++){
+			while((SysTick->CTRL &  CTRL_COUNTFLAG) == 0){}
+	}
+	SysTick->CTRL = 0;
+}
+Systick.h
+void systick(void);

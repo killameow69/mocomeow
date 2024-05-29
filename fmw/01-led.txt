@@ -1,0 +1,58 @@
+ALGORITHM:
+STEP 1: Start the program.
+STEP 2: Enable the GPIOA clock.
+STEP 3: Make the moder register as output mode. 
+STEP 4: Turn on the led of GPIO (PA5 pin) by using ODR register.
+STEP 5: Turn off the led by using the ODR register.
+STEP 6: Stop the program.
+
+PROGRAM:
+
+led_blink.c
+
+#include "stm32f4xx.h"
+void delayMs(int n);
+void led_blink()
+{
+	RCC->AHB1ENR |= 1; /* enable GPIOA clock */
+	GPIOA->MODER |= (0<<11);
+	GPIOA->MODER |= (1<<10); /* set pin to output mode */
+	while(1)
+	{
+			GPIOA->ODR |= 0x00000020; /* turn on LED */
+			delayMs(500);
+			GPIOA->ODR &= ~0x00000020; /* turn off LED */
+			delayMs(500);
+	}
+}
+void delayMs(int n)
+{
+	int i;
+	for (; n > 0; n--)
+	for (i = 0; i < 3195; i++) ;
+}
+
+led_blink.h
+
+void led_blink();
+
+main.c
+#include "led_blink.h"
+void main()
+{
+	led_blink();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+

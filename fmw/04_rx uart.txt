@@ -1,0 +1,229 @@
+ALGORITHM:
+STEP 1: Include necessary header files.
+STEP 2: Define macros for GPIOA clock enable bit and LED pin:
+•	GPIOAEN: Bit position to enable clock access to GPIOA.
+•	GPIOA_5: Bit position representing pin 5 of GPIOA.
+STEP 3: Declare a global variable key of type char to store received characters.
+STEP 4: In the main function:
+•	Enable clock access to GPIOA by setting the corresponding bit in the AHB1ENR register.
+•	Configure PA5 as an output pin by setting the appropriate bits in the MODER register.
+•	Initialize UART2 for communication by calling uart2_rxtx_init() function.
+STEP 5: Enter an infinite loop:
+•	Read a character from UART2 using uart2_read() and store it in the variable key.
+•	Check if the received character is '1'.
+STEP 6: Define a function __io_putchar() which is required for implementing printf() functionality. This function writes a character to UART2.
+STEP 7:  Define functions uart2_rxtx_init() and uart2_tx_init() for initializing UART2
+STEP 8: Define functions uart2_read() and uart2_write() for reading from and writing to UART2
+STEP 9:  Implement a static function uart_set_baudrate() and compute_uart_bd() to compute and set the UART baud rate
+STEP 10: Before using UART communication, you need to initialize UART by calling one of the initialization functions provided in the header file.
+STEP 11: You can choose between uart2_tx_init() if you only need transmission or uart2_rxtx_init() if you need both transmission and reception.
+STEP 12: After initialization, you can use uart2_read() to read data from UART2. This function waits for incoming data and returns the received character.
+STEP 13: You can use uart2_write() to send data via UART2. This function takes an integer as input and sends the corresponding character over UART2.
+
+
+PROGRAM:
+
+main.c:
+#include <stdio.h>
+#include <stdint.h>
+#include "stm32f4xx.h"
+#include "uart.h"
+
+
+#define GPIOAEN				   (1U<<0)
+#define GPIOA_5				   (1U<<5)
+
+#define LED_PIN				   GPIOA_5
+
+char key;
+
+int main(void)
+{
+
+	/*1.Enable clock access to GPIOA*/
+	RCC->AHB1ENR |= GPIOAEN;
+
+	/*2.Set PA5 as output pin*/
+	GPIOA->MODER |= (1U<<10);
+	GPIOA->MODER &= ~(1U<<11);
+
+
+	uart2_rxtx_init();
+
+	while(1)
+	{
+		key =  uart2_read();
+		if(key == '1')
+		{
+			GPIOA->ODR |= LED_PIN;
+		}
+		else{
+			GPIOA->ODR &= ~LED_PIN;
+
+		}
+	}
+
+}
+
+Uart.c:
+
+#include "uart.h"
+
+
+
+#define GPIOAEN			(1U<<0)
+#define UART2EN			(1U<<17)
+
+#define CR1_TE			(1U<<3)
+#define CR1_RE			(1U<<2)
+
+#define CR1_UE			(1U<<13)
+#define SR_TXE			(1U<<7)
+#define SR_RXNE			(1U<<5)
+
+
+
+#define SYS_FREQ		16000000
+#define APB1_CLK		SYS_FREQ
+
+#define UART_BAUDRATE		115200
+
+static void uart_set_baudrate(USART_TypeDef *USARTx, uint32_t PeriphClk,  uint32_t BaudRate);
+static uint16_t compute_uart_bd(uint32_t PeriphClk, uint32_t BaudRate);
+
+void uart2_write(int ch);
+
+
+int __io_putchar(int ch)
+{
+	uart2_write(ch);
+	return ch;
+}
+
+void uart2_rxtx_init(void)
+{
+	/****************Configure uart gpio pin***************/
+	/*Enable clock access to gpioa */
+	RCC->AHB1ENR |= GPIOAEN;
+
+	/*Set PA2 mode to alternate function mode*/
+	GPIOA->MODER &=~(1U<<4);
+	GPIOA->MODER |= (1U<<5);
+
+	/*Set PA2 alternate function type to UART_TX (AF07)*/
+	GPIOA->AFR[0] |= (1U<<8);
+	GPIOA->AFR[0] |= (1U<<9);
+	GPIOA->AFR[0] |= (1U<<10);
+	GPIOA->AFR[0] &= ~(1U<<11);
+
+
+	/*Set PA3 mode to alternate function mode*/
+	GPIOA->MODER &=~(1U<<6);
+	GPIOA->MODER |= (1U<<7);
+
+	/*Set PA3 alternate function type to UART_RX (AF07)*/
+	GPIOA->AFR[0] |= (1U<<12);
+	GPIOA->AFR[0] |= (1U<<13);
+	GPIOA->AFR[0] |= (1U<<14);
+	GPIOA->AFR[0] &= ~(1U<<15);
+
+
+
+
+	/****************Configure uart module ***************/
+	/*Enable clock access to uart2 */
+	RCC->APB1ENR |= UART2EN;
+
+	/*Configure baudrate*/
+	uart_set_baudrate(USART2,APB1_CLK,UART_BAUDRATE);
+
+	/*Configure the transfer direction*/
+	 USART2->CR1 =  (CR1_TE | CR1_RE);
+
+	/*Enable uart module*/
+	 USART2->CR1 |= CR1_UE;
+
+
+}
+
+void uart2_tx_init(void)
+{
+	/****************Configure uart gpio pin***************/
+	/*Enable clock access to gpioa */
+	RCC->AHB1ENR |= GPIOAEN;
+
+	/*Set PA2 mode to alternate function mode*/
+	GPIOA->MODER &=~(1U<<4);
+	GPIOA->MODER |= (1U<<5);
+
+	/*Set PA2 alternate function type to UART_TX (AF07)*/
+	GPIOA->AFR[0] |= (1U<<8);
+	GPIOA->AFR[0] |= (1U<<9);
+	GPIOA->AFR[0] |= (1U<<10);
+	GPIOA->AFR[0] &= ~(1U<<11);
+
+
+	/****************Configure uart module ***************/
+	/*Enable clock access to uart2 */
+	RCC->APB1ENR |= UART2EN;
+
+	/*Configure baudrate*/
+	uart_set_baudrate(USART2,APB1_CLK,UART_BAUDRATE);
+
+	/*Configure the transfer direction*/
+	 USART2->CR1 =  CR1_TE;
+
+	/*Enable uart module*/
+	 USART2->CR1 |= CR1_UE;
+
+
+}
+
+
+char uart2_read(void)
+{
+	  /*Make sure the receive data register is not empty*/
+	while(!(USART2->SR & SR_RXNE)){}
+
+	/*Read data*/
+	return USART2->DR;
+
+}
+
+void uart2_write(int ch)
+{
+  /*Make sure the transmit data register is empty*/
+	while(!(USART2->SR & SR_TXE)){}
+
+  /*Write to transmit data register*/
+	USART2->DR	=  (ch & 0xFF);
+}
+
+
+
+
+static void uart_set_baudrate(USART_TypeDef *USARTx, uint32_t PeriphClk,  uint32_t BaudRate)
+{
+	USARTx->BRR =  compute_uart_bd(PeriphClk,BaudRate);
+}
+
+static uint16_t compute_uart_bd(uint32_t PeriphClk, uint32_t BaudRate)
+{
+	return ((PeriphClk + (BaudRate/2U))/BaudRate);
+}
+
+
+Uart.h:
+#ifndef UART_H_
+#define UART_H_
+#include <stdint.h>
+
+#include "stm32f4xx.h"
+
+void uart2_tx_init(void);
+char uart2_read(void);
+void uart2_rxtx_init(void);
+
+
+#endif /* UART_H_ */
+

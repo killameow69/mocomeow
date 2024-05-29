@@ -1,0 +1,67 @@
+ALGORITHM:
+STEP 1: Start the program .
+STEP 2:Create  the project  File > New > STM32 Project, select 
+              STM32F446RE, set project name/location, click "Finish".
+STEP 3: Use STM32Cube to set clock source, PLL, and save.
+STEP 4: Configure Timer to  STM32Cube, select timer, set mode, prescaler,    
+                period, channel, edge, and GPIO pin.
+STEP 5: Generate Code and Click "Project" > "Generate Code" in 
+               STM32Cube.
+STEP 6: Implement Application Code  write code in main.c, include headers, 
+                initialize HAL, timer, GPIO, start timer, handle events.
+STEP 7: Build and Debug: Compile and debug project in STM32CubeIDE.
+STEP 8:  Stop the program.
+
+PROGRAM:
+main.c
+#include <stdio.h>
+#include <stdint.h>
+#include "stm32f4xx.h"
+#include "tim.h"
+int timestamp = 0 ;
+/Set up : Connect a jumper wire from PA5 to PA6/
+int main(void)
+{
+	tim2_pa5_output_compare();
+	tim3_pa6_input_capture();
+	while(1)
+	{
+     /Wait until edge is captured/
+		while(!(TIM3->SR & SR_CC1IF)){}
+		/Read captured value/
+		timestamp =  TIM3->CCR1;	
+          }
+}
+
+tim.c
+
+#include <stdio.h>
+#include <stdint.h>
+#include "stm32f4xx.h"
+#include "tim.h"
+int timestamp = 0 ;
+
+/Set up : Connect a jumper wire from PA5 to PA6/
+int main(void)
+{
+	tim2_pa5_output_compare();
+	tim3_pa6_input_capture();
+while(1)
+	{
+       /Wait until edge is captured/
+		while(!(TIM3->SR & SR_CC1IF)){}
+		/Read captured value/
+		timestamp =  TIM3->CCR1;
+
+	}
+}
+
+tim.h
+
+#ifndef TIM_H_
+#define TIM_H_
+void tim2_1hz_init(void);
+void tim2_pa5_output_compare(void);
+#define SR_UIF  (1U<<0)
+#endif /* TIM_H_ */
+
